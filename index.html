@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>起始页</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="bg"></div>
+<div id="dim"></div>
+
+<main class="wrap">
+  <div id="time" class="enter e1">--:--</div>
+  <div id="date" class="enter e2"></div>
+
+  <!-- 搜索视图与应用视图互斥：空白处左键回搜索，右键切应用 -->
+  <div id="viewSearch" class="view">
+    <div class="search-area enter e3">
+      <div class="search" id="search">
+        <button type="button" id="engineBtn" data-i18n-title="engineTitle" title="切换搜索引擎（Alt+数字）"></button>
+        <form id="searchForm">
+          <input id="q" type="text" autocomplete="off" spellcheck="false" autofocus
+                 data-i18n-ph="searchPh" placeholder="搜索">
+        </form>
+        <div id="engineMenu" class="pop" hidden></div>
+        <ul id="sugg" class="pop" hidden></ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewApps" class="view" hidden>
+    <div id="grid"></div>
+    <button id="gridToggle" type="button" hidden>
+      <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</main>
+
+<div id="hitokoto"></div>
+
+<button id="wallBtn" class="corner-btn wall" type="button" data-i18n-title="wallBtnTitle" title="换一张壁纸">
+  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/>
+    <circle cx="9" cy="10" r="1.6"/>
+    <path d="M4.5 17l4.5-4.5 3 3 4-4 3.5 3.5"/>
+  </svg>
+</button>
+
+<button id="settingsBtn" class="corner-btn" type="button" data-i18n-title="settingsTitle" title="设置">
+  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+    <line x1="3" y1="7" x2="21" y2="7"/><circle cx="9" cy="7" r="2.2" fill="var(--panel-bg, #fff)"/>
+    <line x1="3" y1="12" x2="21" y2="12"/><circle cx="15" cy="12" r="2.2" fill="var(--panel-bg, #fff)"/>
+    <line x1="3" y1="17" x2="21" y2="17"/><circle cx="7" cy="17" r="2.2" fill="var(--panel-bg, #fff)"/>
+  </svg>
+</button>
+
+<!-- 磁贴右键菜单 -->
+<div id="ctxMenu" class="ctx" hidden></div>
+
+<!-- 弹层遮罩：收纳夹 / 编辑对话框 / 设置面板共用 -->
+<div id="overlay" hidden>
+
+  <div id="folderPop" class="modal" hidden>
+    <div class="modal-title" id="folderTitle"></div>
+    <div id="folderGrid" class="folder-grid"></div>
+  </div>
+
+  <div id="editDlg" class="modal" hidden>
+    <div class="modal-title" id="dlgTitle">添加</div>
+    <div class="dlg-form">
+      <div class="dlg-row" id="dlgTypeRow">
+        <span class="dlg-label" data-i18n="type">类型</span>
+        <label class="radio"><input type="radio" name="dlgType" value="link" checked> <span data-i18n="typeLink">快捷方式</span></label>
+        <label class="radio"><input type="radio" name="dlgType" value="folder"> <span data-i18n="typeFolder">收纳夹</span></label>
+      </div>
+      <div class="dlg-row">
+        <span class="dlg-label" data-i18n="name">名称</span>
+        <input id="dlgName" type="text" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="dlg-row" id="dlgUrlRow">
+        <span class="dlg-label" data-i18n="url">地址</span>
+        <input id="dlgUrl" type="text" autocomplete="off" spellcheck="false"
+               data-i18n-ph="urlPh" placeholder="https://… 或 file:///E:/…">
+      </div>
+      <div class="dlg-row" id="dlgIconRow">
+        <span class="dlg-label" data-i18n="icon">图标</span>
+        <input id="dlgIcon" type="text" autocomplete="off" spellcheck="false"
+               data-i18n-ph="iconPh" placeholder="留空自动；可填 emoji 或图片地址">
+      </div>
+      <div class="dlg-err" id="dlgErr"></div>
+      <div class="dlg-actions">
+        <button type="button" id="dlgCancel" data-i18n="cancel">取消</button>
+        <button type="button" id="dlgOk" class="primary" data-i18n="save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsDlg" class="modal" hidden>
+    <div class="modal-title" data-i18n="settings">设置</div>
+    <div class="set-row"><span data-i18n="lang">语言</span>
+      <select id="setLang">
+        <option value="auto" data-i18n="langAuto">跟随浏览器</option>
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+    <div class="set-row"><span data-i18n="theme">主题</span>
+      <select id="setTheme">
+        <option value="auto" data-i18n="themeAuto">跟随时间（19:00~7:00 深色）</option>
+        <option value="light" data-i18n="themeLight">浅色</option>
+        <option value="dark" data-i18n="themeDark">深色</option>
+      </select>
+    </div>
+    <div class="set-row"><span data-i18n="wall">壁纸</span>
+      <select id="setWall">
+        <option value="random-bing" data-i18n="wallRandBing">必应随机（每天 3 点更换）</option>
+        <option value="random-photo" data-i18n="wallRandPhoto">随机图片（每天 3 点更换）</option>
+        <option value="daily" data-i18n="wallDaily">必应今日</option>
+        <option value="custom" data-i18n="wallCustom">自定义地址</option>
+      </select>
+    </div>
+    <div class="set-row" id="setWallUrlRow" style="display:none">
+      <input id="setWallUrl" type="text" spellcheck="false"
+             data-i18n-ph="wallUrlPh" placeholder="图片地址：https://… 或 file:///E:/…">
+    </div>
+    <div class="set-row"><span data-i18n="dim">壁纸压暗</span><input type="range" id="setDim" min="0" max="100" step="5"></div>
+    <div class="set-row"><span data-i18n="sugg">搜索联想词</span><input type="checkbox" id="setSugg"></div>
+    <div class="set-row"><span data-i18n="hist">搜索历史</span><input type="checkbox" id="setHist"></div>
+    <div class="set-row"><span data-i18n="quote">一言</span><input type="checkbox" id="setHito"></div>
+    <div class="set-row"><span data-i18n="searchNT">搜索在新标签页打开</span><input type="checkbox" id="setSearchNT"></div>
+    <div class="set-row"><span data-i18n="shortcutNT">快捷方式在新标签页打开</span><input type="checkbox" id="setShortNT"></div>
+    <div class="set-actions">
+      <button type="button" id="btnExport" class="primary" data-i18n="export">导出 config.js</button>
+      <button type="button" id="btnReset" data-i18n="reset">恢复 config.js 默认</button>
+    </div>
+    <p class="set-note" data-i18n="note">页面内的修改保存在浏览器本地。迁移浏览器时：点「导出」，用下载的文件覆盖项目里的 config.js。</p>
+  </div>
+
+</div>
+
+<!-- file:// 页面无法 fetch 本地 JSON，所以配置以 .js 形式引入 -->
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
