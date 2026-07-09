@@ -36,7 +36,7 @@
 ## 四、搜索
 
 - 点击搜索框**左侧图标**弹出引擎菜单；`engines` 数组可增删，`{q}` 为关键词占位符
-- 引擎图标统一使用 [Simple Icons](https://simpleicons.org) 图标库（白色品牌标 + `color` 品牌色圆底）；未收录的品牌自动显示白色首字圆标，形态一致。新增引擎时到 simpleicons.org 搜 slug，`icon` 填 `https://cdn.simpleicons.org/{slug}/ffffff`
+- 引擎图标使用 [Iconify](https://icon-sets.iconify.design)（`<iconify-icon>` Web Component，按需从 CDN 加载并本地缓存）。`icon` 字段填图标名，扁平单色、颜色自动跟随环境、大小统一。推荐统一用 Remix Icon（`ri:` 前缀）保持风格一致；新增引擎到 icon-sets.iconify.design 搜图标名即可，留空则显示名称首字
 - 输入时显示百度联想词（↑↓ 键选择）
 - 点击空搜索框显示**搜索历史**（单条删除 / 清空，最多 20 条）
 

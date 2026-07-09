@@ -347,26 +347,20 @@
     localStorage.setItem("engineKey", key);
     renderEngineBtn();
   }
-  // 统一形态的引擎图标：品牌色圆底 + 白色品牌标（无品牌标时为白色首字）
+  // 引擎图标交给 Iconify 图标库（<iconify-icon> Web Component）：
+  // 按需从 CDN 加载、自动缓存、尺寸统一，颜色继承 currentColor。
+  // icon 字段填 Iconify 图标名（如 "ri:google-fill"）；留空显示名称首字。
   function engineIconNode(e) {
-    var badge = document.createElement("span");
-    badge.className = "eng-ico";
-    var h = hueOf(e.name);
-    badge.style.background = e.color ||
-      "linear-gradient(135deg, hsl(" + h + ",65%,55%), hsl(" + ((h + 45) % 360) + ",65%,42%))";
-    if (e.icon) {
-      var img = document.createElement("img");
-      img.alt = "";
-      img.onerror = function () {   // 图标库不可达 → 退回首字，形态不变
-        img.remove();
-        badge.textContent = (e.name || "?").charAt(0).toUpperCase();
-      };
-      img.src = e.icon;
-      badge.appendChild(img);
+    var box = document.createElement("span");
+    box.className = "eng-ico";
+    if (e.icon && e.icon.indexOf(":") > -1 && window.customElements) {
+      var ic = document.createElement("iconify-icon");
+      ic.setAttribute("icon", e.icon);
+      box.appendChild(ic);
     } else {
-      badge.textContent = (e.name || "?").charAt(0).toUpperCase();
+      box.textContent = (e.name || "?").charAt(0).toUpperCase();   // 无图标 / 库不可用 → 首字
     }
-    return badge;
+    return box;
   }
   function renderEngineBtn() {
     engineBtn.innerHTML = "";

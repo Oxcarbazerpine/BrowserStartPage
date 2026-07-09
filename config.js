@@ -37,20 +37,20 @@ const CONFIG = {
 
   // ---------- 搜索引擎 ----------
   // {q} 会被替换为编码后的关键词。
-  // 图标使用 Simple Icons 图标库（cdn.simpleicons.org）的白色品牌标，风格统一；
-  // color 是圆底的品牌色。没有 icon 的引擎显示白色首字 + color 圆底，形态一致。
-  // 添加新引擎时可在 https://simpleicons.org 搜索品牌 slug。
+  // 图标使用 Iconify 图标库：icon 填图标名，颜色自动跟随环境、大小统一。
+  // 推荐用同一套 Remix Icon（ri:）保持风格一致；到 https://icon-sets.iconify.design
+  // 搜索图标名即可。留空则显示名称首字。
   engines: [
     { key: "google", name: "Google", url: "https://www.google.com/search?q={q}",
-      icon: "https://cdn.simpleicons.org/google/ffffff",   color: "#4285F4" },
+      icon: "ri:google-fill" },
     { key: "bing",   name: "必应",   url: "https://www.bing.com/search?q={q}",
-      color: "#174AE4" },   // Simple Icons 未收录微软品牌，用首字圆标
+      icon: "ri:microsoft-fill" },   // Remix Icon 无 Bing，用微软标
     { key: "baidu",  name: "百度",   url: "https://www.baidu.com/s?wd={q}",
-      icon: "https://cdn.simpleicons.org/baidu/ffffff",    color: "#2932E1" },
+      icon: "ri:baidu-fill" },
     { key: "bili",   name: "B站",    url: "https://search.bilibili.com/all?keyword={q}",
-      icon: "https://cdn.simpleicons.org/bilibili/ffffff", color: "#00A1D6" },
+      icon: "ri:bilibili-fill" },
     { key: "ghub",   name: "GitHub", url: "https://github.com/search?q={q}",
-      icon: "https://cdn.simpleicons.org/github/ffffff",   color: "#24292F" },
+      icon: "ri:github-fill" },
   ],
 
   // 搜索结果是否开新标签页（false = 当前页跳转）
