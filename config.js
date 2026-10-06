@@ -15,7 +15,7 @@ const CONFIG = {
   theme: "auto",
 
   // 界面语言：auto = 跟随浏览器 / zh = 中文 / en = English
-  // 底部一言的来源随语言联动（中文 = 一言 hitokoto，英文 = 英文名言）
+  // 底部一言的来源随语言联动（中文 = 今日诗词，英文 = 英文名言）
   lang: "auto",
 
   // ---------- 壁纸 ----------
@@ -37,20 +37,21 @@ const CONFIG = {
 
   // ---------- 搜索引擎 ----------
   // {q} 会被替换为编码后的关键词。
-  // 图标使用 Iconify 图标库：icon 填图标名，颜色自动跟随环境、大小统一。
-  // 推荐用同一套 Remix Icon（ri:）保持风格一致；到 https://icon-sets.iconify.design
-  // 搜索图标名即可。留空则显示名称首字。
+  // 图标使用 Iconify 图标库：icon 填图标名，到 https://icon-sets.iconify.design 搜索。
+  // 推荐用同一套 Remix Icon（ri:）保持形状风格一致；留空则显示名称首字。
+  // color 为品牌色；不填则跟随主题前景色。
+  // colorDark（可选）：品牌色太深、在深色面板或壁纸上看不清时，用这个更亮的同色系版本。
   engines: [
     { key: "google", name: "Google", url: "https://www.google.com/search?q={q}",
-      icon: "ri:google-fill" },
+      icon: "ri:google-fill",       color: "#4285F4" },
     { key: "bing",   name: "必应",   url: "https://www.bing.com/search?q={q}",
-      icon: "ri:microsoft-fill" },   // Remix Icon 无 Bing，用微软标
+      icon: "mdi:microsoft-bing",   color: "#0C8484", colorDark: "#2BB3B3" },   // Remix Icon 无 Bing，借用 MDI 的 Bing 标
     { key: "baidu",  name: "百度",   url: "https://www.baidu.com/s?wd={q}",
-      icon: "ri:baidu-fill" },
+      icon: "ri:baidu-fill",        color: "#2932E1", colorDark: "#6670FF" },
     { key: "bili",   name: "B站",    url: "https://search.bilibili.com/all?keyword={q}",
-      icon: "ri:bilibili-fill" },
+      icon: "ri:bilibili-fill",     color: "#F25D8E" },
     { key: "ghub",   name: "GitHub", url: "https://github.com/search?q={q}",
-      icon: "ri:github-fill" },
+      icon: "ri:github-fill" },     // GitHub 品牌色为黑，跟随主题更清楚
   ],
 
   // 搜索结果是否开新标签页（false = 当前页跳转）
@@ -67,7 +68,10 @@ const CONFIG = {
 
   // ---------- 快捷方式 ----------
   // icon 字段：
-  //   不填          → 网站自动取 favicon，本地页面显示首字渐变徽标（推荐）
+  //   不填          → 常见网站按网址自动匹配官方品牌标（B站、GitHub、淘宝、阿里云……），
+  //                   匹配不到的（含本地页面）显示首字渐变方块（推荐）
+  //   图标名        → Iconify 图标，如 "ri:book-open-fill"，到 https://icon-sets.iconify.design 搜
+  //                   可加 color 指定方块颜色，如 color: "#3B82F6"
   //   emoji         → 直接显示，如 "🔧"
   //   图片 URL/路径 → 显示该图片
   // url 支持三种写法：

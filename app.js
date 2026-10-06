@@ -64,7 +64,7 @@
       type: "类型", typeLink: "快捷方式", typeFolder: "收纳夹",
       name: "名称", url: "地址", icon: "图标",
       urlPh: "https://… 或 file:///E:/…",
-      iconPh: "留空自动；可填 emoji 或图片地址",
+      iconPh: "留空自动匹配官方图标；也可填图标名（如 ri:github-fill）、emoji、图片地址",
       cancel: "取消", save: "保存",
       errName: "名称不能为空", errUrl: "地址不能为空",
       settings: "设置", lang: "语言", langAuto: "跟随浏览器",
@@ -94,7 +94,7 @@
       type: "Type", typeLink: "Shortcut", typeFolder: "Folder",
       name: "Name", url: "URL", icon: "Icon",
       urlPh: "https://… or file:///E:/…",
-      iconPh: "Leave empty for auto; emoji or image URL",
+      iconPh: "Empty = auto brand icon; or an icon name (e.g. ri:github-fill), emoji, image URL",
       cancel: "Cancel", save: "Save",
       errName: "Name is required", errUrl: "URL is required",
       settings: "Settings", lang: "Language", langAuto: "Follow browser",
@@ -311,24 +311,92 @@
     img.src = src;
     return img;
   }
-  function faviconOf(url) {
-    try {
-      var u = new URL(url);
-      if (u.protocol === "http:" || u.protocol === "https:") return u.origin + "/favicon.ico";
-    } catch (e) { /* 相对路径或 file:// */ }
-    return null;
-  }
   function isImgIcon(icon) {
     return /^(https?:|file:)/i.test(icon) || icon.indexOf("/") >= 0 ||
       /\.(png|jpe?g|gif|svg|webp|ico)$/i.test(icon);
   }
-  // 任意条目 → 图标节点（小尺寸用于收纳夹预览 / 引擎菜单）
-  function iconNodeOf(item, letterCls) {
-    if (item.icon && isImgIcon(item.icon)) return imgOrLetter(item.icon, item.name, letterCls);
-    if (item.icon) { var sp = document.createElement("span"); sp.textContent = item.icon; return sp; }
-    var fav = item.url && faviconOf(item.url);
-    if (fav) return imgOrLetter(fav, item.name, letterCls);
-    return makeLetter(item.name, letterCls);
+  function isIconifyName(icon) { return /^[a-z0-9-]+:[a-z0-9-]+$/i.test(icon); }
+
+  // 常见网站 → 官方品牌标（Iconify）+ 品牌色。按「域名+路径」匹配，更具体的规则放前面。
+  var BRAND_ICONS = [
+    [/(^|\.)bing\.com\/translator/,        "mdi:microsoft-bing",           "#0C8484"],
+    [/(^|\.)bing\.com\//,                  "mdi:microsoft-bing",           "#0C8484"],
+    [/^translate\.google\./,               "simple-icons:googletranslate", "#4285F4"],
+    [/^mail\.google\./,                    "simple-icons:gmail",           "#EA4335"],
+    [/^gemini\.google\./,                  "simple-icons:googlegemini",    "#8E75B2"],
+    [/^maps\.google\.|google\.[a-z.]+\/maps/, "simple-icons:googlemaps",   "#34A853"],
+    [/(^|\.)google\.[a-z.]+\//,            "ri:google-fill",               "#4285F4"],
+    [/(^|\.)youtube\.com\//,               "ri:youtube-fill",              "#FF0000"],
+    [/(^|\.)bilibili\.com\//,              "ri:bilibili-fill",             "#F25D8E"],
+    [/(^|\.)github\.com\//,                "ri:github-fill",               "#24292F"],
+    [/(^|\.)amazon\.[a-z.]+\//,            "ri:amazon-fill",               "#FF9900"],
+    [/(^|\.)claude\.ai\//,                 "simple-icons:claude",          "#D97757"],
+    [/(^|\.)anthropic\.com\//,             "simple-icons:anthropic",       "#D97757"],
+    [/(^|\.)(chatgpt|openai)\.com\//,      "ri:openai-fill",               "#10A37F"],
+    [/(^|\.)deepseek\.com\//,              "simple-icons:deepseek",        "#4D6BFE"],
+    [/(^|\.)(aliyun|alibabacloud)\.com\//, "simple-icons:alibabacloud",    "#FF6A00"],
+    [/(^|\.)(taobao|tmall)\.com\//,        "ri:taobao-fill",               "#FF5000"],
+    [/(^|\.)alipay\.com\//,                "ri:alipay-fill",               "#1677FF"],
+    [/(^|\.)ilovepdf\.com\//,              "simple-icons:ilovepdf",        "#E5322D"],
+    [/(^|\.)azure\.com\/|microsoft\.com\/[^?#]*azure/, "mdi:microsoft-azure", "#0078D4"],
+    [/^outlook\.(live|office)\.com\//,     "mdi:microsoft-outlook",        "#0078D4"],
+    [/^teams\.microsoft\.com\//,           "mdi:microsoft-teams",          "#6264A7"],
+    [/(^|\.)(office|microsoft365)\.com\//, "mdi:microsoft-office",         "#D83B01"],
+    [/(^|\.)microsoft\.com\//,             "ri:microsoft-fill",            "#0078D4"],
+    [/(^|\.)(wx|weixin)\.qq\.com\//,       "ri:wechat-fill",               "#07C160"],
+    [/(^|\.)qq\.com\//,                    "ri:qq-fill",                   "#12B7F5"],
+    [/(^|\.)baidu\.com\//,                 "ri:baidu-fill",                "#2932E1"],
+    [/(^|\.)zhihu\.com\//,                 "ri:zhihu-fill",                "#0066FF"],
+    [/(^|\.)weibo\.com\//,                 "ri:weibo-fill",                "#E6162D"],
+    [/(^|\.)douban\.com\//,                "ri:douban-fill",               "#2E963D"],
+    [/^music\.163\.com\//,                 "ri:netease-cloud-music-fill",  "#E60026"],
+    [/(^|\.)xiaohongshu\.com\//,           "simple-icons:xiaohongshu",     "#FF2442"],
+    [/(^|\.)(douyin|tiktok)\.com\//,       "ri:tiktok-fill",               "#111111"],
+    [/(^|\.)(x|twitter)\.com\//,           "ri:twitter-x-fill",            "#111111"],
+    [/(^|\.)reddit\.com\//,                "ri:reddit-fill",               "#FF4500"],
+    [/(^|\.)notion\.(so|com)\//,           "ri:notion-fill",               "#191919"],
+    [/(^|\.)figma\.com\//,                 "ri:figma-fill",                "#F24E1E"],
+    [/(^|\.)spotify\.com\//,               "ri:spotify-fill",              "#1DB954"],
+    [/(^|\.)netflix\.com\//,               "ri:netflix-fill",              "#E50914"],
+    [/(^|\.)gitee\.com\//,                 "simple-icons:gitee",           "#C71D23"],
+    [/(^|\.)juejin\.cn\//,                 "simple-icons:juejin",          "#1E80FF"],
+    [/(^|\.)csdn\.net\//,                  "simple-icons:csdn",            "#FC5531"],
+    [/(^|\.)stackoverflow\.com\//,         "simple-icons:stackoverflow",   "#F58025"],
+    [/(^|\.)cloudflare\.com\//,            "simple-icons:cloudflare",      "#F38020"],
+    [/(^|\.)vercel\.com\//,                "simple-icons:vercel",          "#111111"],
+  ];
+  function brandOf(url) {
+    var u;
+    try { u = new URL(url); } catch (e) { return null; }   // 相对路径
+    if (!/^https?:$/.test(u.protocol)) return null;        // file:// 本地页面不匹配
+    var key = u.hostname.toLowerCase() + u.pathname.toLowerCase();
+    for (var i = 0; i < BRAND_ICONS.length; i++) {
+      if (BRAND_ICONS[i][0].test(key)) return { icon: BRAND_ICONS[i][1], color: BRAND_ICONS[i][2] };
+    }
+    return null;
+  }
+
+  // 磁贴图标优先级：手填 icon（图标名 / 图片 / emoji）> 网址匹配的官方品牌标 > 首字渐变方块
+  function renderTileVisual(box, item) {
+    var icon = item.icon;
+    var iconifyReady = !!(window.customElements && customElements.get("iconify-icon"));
+    var brand = brandOf(item.url);
+    var glyph = icon && isIconifyName(icon) ? icon : (!icon && brand ? brand.icon : null);
+    if (glyph && iconifyReady) {
+      var color = item.color || (brand && brand.color);
+      if (!color) { var h = hueOf(item.name || "?"); color = "hsl(" + h + ",58%,48%)"; }
+      box.classList.add("glyph");
+      box.style.setProperty("--brand", color);
+      var ic = document.createElement("iconify-icon");
+      ic.setAttribute("icon", glyph);
+      box.appendChild(ic);
+    } else if (icon && isImgIcon(icon)) {
+      box.appendChild(imgOrLetter(icon, item.name, "letter-badge"));
+    } else if (icon && !isIconifyName(icon)) {
+      box.textContent = icon;                                  // emoji
+    } else {
+      box.appendChild(makeLetter(item.name, "letter-badge"));  // 图标库不可用 / 无匹配
+    }
   }
 
   // ================= 搜索引擎 =================
@@ -353,6 +421,11 @@
   function engineIconNode(e) {
     var box = document.createElement("span");
     box.className = "eng-ico";
+    if (e.color) {
+      box.classList.add("brand");
+      box.style.setProperty("--brand", e.color);
+      if (e.colorDark) box.style.setProperty("--brand-dark", e.colorDark);
+    }
     if (e.icon && e.icon.indexOf(":") > -1 && window.customElements) {
       var ic = document.createElement("iconify-icon");
       ic.setAttribute("icon", e.icon);
@@ -397,8 +470,13 @@
 
   function toggleEngineMenu() {
     hideSugg();
-    if (engineMenu.hidden) { renderEngineMenu(); engineMenu.hidden = false; }
-    else engineMenu.hidden = true;
+    if (engineMenu.hidden) {
+      renderEngineMenu();
+      engineMenu.hidden = false;
+      input.focus();   // 菜单展开时保持 focus-within，搜索框凝实、菜单不被失焦模糊波及
+    } else {
+      engineMenu.hidden = true;
+    }
   }
   var engineDownAt = 0;
   engineBtn.onmousedown = function (ev) { ev.preventDefault(); ev.stopPropagation(); engineDownAt = Date.now(); toggleEngineMenu(); };
@@ -433,7 +511,6 @@
 
   // ================= 搜索历史 =================
   var HIST_KEY = "searchHistory";
-  var pageLoadedAt = Date.now();
 
   function getHistory() {
     try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; }
@@ -455,11 +532,10 @@
     else hideSugg();
   }
 
-  input.addEventListener("focus", function () {
-    if (skipHistoryOnce) { skipHistoryOnce = false; return; }  // 视图切换带来的聚焦不弹历史
-    if (Date.now() - pageLoadedAt < 800) return;  // 忽略打开页面时的自动聚焦
-    showHistory();
-  });
+  // 历史只在【主动点击】搜索框时弹出，绝不挂在 focus 上——
+  // Chrome 新标签页焦点在地址栏，用户第一次点击页面任意处时，窗口激活会先给
+  // autofocus 的输入框补发 focus 事件；若此时弹历史，面板会在同一次按压中
+  // 出现在指针正下方，mousedown 直接命中历史项，造成"隐形误点"直接跳转。
   input.addEventListener("click", function () {
     if (suggEl.hidden) showHistory();
   });
@@ -470,6 +546,9 @@
   var suggIndex = -1;
   var suggSeq = 0;
   var suggTimer = null;
+  var panelShownAt = 0;
+  // 面板刚出现 200ms 内忽略 mousedown：防止面板恰好展开在按压中的指针下方被"隐形误点"
+  function panelTooFresh() { return Date.now() - panelShownAt < 200; }
 
   input.addEventListener("input", function () {
     clearTimeout(suggTimer);
@@ -510,6 +589,7 @@
       clear.type = "button";
       clear.textContent = t("clear");
       clear.onmousedown = function (ev) {
+        if (panelTooFresh()) return;
         ev.preventDefault(); ev.stopPropagation();
         saveHistory([]);
         hideSugg();
@@ -533,6 +613,7 @@
         del.textContent = "×";
         del.title = t("delHist");
         del.onmousedown = function (ev) {
+          if (panelTooFresh()) return;
           ev.preventDefault(); ev.stopPropagation();
           saveHistory(getHistory().filter(function (x) { return x !== text; }));
           showHistory();
@@ -540,10 +621,15 @@
         li.appendChild(del);
       }
       // mousedown 早于 input 失焦，保证点击可靠触发
-      li.onmousedown = function (ev) { ev.preventDefault(); doSearch(text); };
+      li.onmousedown = function (ev) {
+        if (panelTooFresh()) return;
+        ev.preventDefault();
+        doSearch(text);
+      };
       li.onmouseenter = function () { setSuggIndex(i, false); };
       suggEl.appendChild(li);
     });
+    if (suggEl.hidden) panelShownAt = Date.now();   // 仅记录"从隐藏到出现"的时刻
     suggEl.hidden = false;
   }
 
@@ -578,13 +664,22 @@
   // ================= 一言 / Daily quote（来源随语言切换） =================
   var hk = $("hitokoto");
   function loadQuote() {
-    var req = lang === "en"
-      ? fetch("https://dummyjson.com/quotes/random")
-          .then(function (r) { return r.json(); })
-          .then(function (d) { hk.textContent = "“" + d.quote + "” — " + d.author; })
-      : fetch("https://v1.hitokoto.cn/?max_length=30")
-          .then(function (r) { return r.json(); })
-          .then(function (d) { hk.textContent = d.hitokoto + (d.from ? "  —— " + d.from : ""); });
+    var req;
+    if (lang === "en") {
+      req = fetch("https://dummyjson.com/quotes/random")
+        .then(function (r) { return r.json(); })
+        .then(function (d) { hk.textContent = "“" + d.quote + "” — " + d.author; });
+    } else {
+      // 今日诗词：纯唐诗宋词单句，带作者与出处；失败退回 hitokoto 诗词分类
+      req = fetch("https://v1.jinrishici.com/all.json")
+        .then(function (r) { return r.json(); })
+        .then(function (d) { hk.textContent = d.content + "  —— " + d.author + "《" + d.origin + "》"; })
+        .catch(function () {
+          return fetch("https://v1.hitokoto.cn/?c=i&max_length=30")
+            .then(function (r) { return r.json(); })
+            .then(function (d) { hk.textContent = d.hitokoto + (d.from ? "  —— " + d.from : ""); });
+        });
+    }
     req.then(function () { hk.classList.add("show"); })
       .catch(function () { /* 接口不可用则保持隐藏 */ });
   }
@@ -611,7 +706,7 @@
       item.items.slice(0, 4).forEach(function (child) {
         var mini = document.createElement("div");
         mini.className = "mini";
-        mini.appendChild(iconNodeOf(child, "letter-badge"));
+        renderTileVisual(mini, child);
         box.appendChild(mini);
       });
       if (!item.items.length) {
@@ -621,9 +716,7 @@
       }
     } else {
       box.className = "tile-icon";
-      var node = iconNodeOf(item, "letter-badge");
-      if (node.tagName === "SPAN" && !node.className) box.textContent = node.textContent;  // emoji
-      else box.appendChild(node);
+      renderTileVisual(box, item);
     }
     return box;
   }
@@ -659,55 +752,140 @@
       showCtxMenu(ev.clientX, ev.clientY, item, i, folderIdx);
     };
 
-    // 拖拽排序（同一列表内）
-    el.draggable = true;
-    el.ondragstart = function (ev) {
-      ev.dataTransfer.setData("text/plain", "");
-      ev.dataTransfer.effectAllowed = "move";
-      dragFrom = { index: i, folderIdx: folderIdx };
-      el.classList.add("dragging");
-    };
-    el.ondragend = function () { el.classList.remove("dragging"); dragFrom = null; };
-    // 顶层把普通磁贴拖到收纳夹上 = 放进收纳夹；其余情况 = 同列表内排序
-    function isDropIntoFolder() {
-      return folderIdx < 0 && isFolder(item) &&
-        dragFrom && dragFrom.folderIdx < 0 &&
-        dragFrom.index !== i && !isFolder(conf.shortcuts[dragFrom.index]);
-    }
-    el.ondragover = function (ev) {
-      if (!dragFrom) return;
-      if (isDropIntoFolder()) {
-        ev.preventDefault();
-        el.classList.add("drop-into");
-      } else if (dragFrom.folderIdx === folderIdx && dragFrom.index !== i) {
-        ev.preventDefault();
+    // 手机 app 式拖拽排序（pointer 驱动 + FLIP 让位，引擎见下方 beginDragCandidate）
+    el.draggable = false;   // 关掉 <a>/img 原生拖拽，避免与自定义拖拽冲突
+    el.addEventListener("pointerdown", function (ev) {
+      if (ev.button === 0) beginDragCandidate(ev, el, i, folderIdx);
+    });
+    return el;
+  }
+
+  // ---------- 拖拽排序引擎 ----------
+  function tileList(folderIdx) {
+    return folderIdx < 0 ? conf.shortcuts : conf.shortcuts[folderIdx].items;
+  }
+
+  // FLIP：记录旧位 → 改 DOM → 反算位移，从旧位平滑滑到新位。
+  // 占位件不参与（它被浮起副本遮住，动它会穿帮）。
+  function flip(container, mutate) {
+    var kids = [].slice.call(container.children).filter(function (k) {
+      return !k.classList.contains("drag-placeholder");
+    });
+    var first = kids.map(function (k) { return k.getBoundingClientRect(); });
+    mutate();
+    kids.forEach(function (k, idx) {
+      var last = k.getBoundingClientRect();
+      var dx = first[idx].left - last.left, dy = first[idx].top - last.top;
+      if (!dx && !dy) return;
+      k.style.transition = "none";
+      k.style.transform = "translate(" + dx + "px," + dy + "px)";
+      k.getBoundingClientRect();   // 强制回流，固定动画起点
+      requestAnimationFrame(function () {
+        k.style.transition = "transform .28s var(--ease-out)";
+        k.style.transform = "";
+      });
+    });
+  }
+
+  // 拖拽后紧跟的那次 click（会打开链接/收纳夹）需要拦掉
+  var justDragged = false;
+  document.addEventListener("click", function (ev) {
+    if (justDragged) { ev.preventDefault(); ev.stopPropagation(); justDragged = false; }
+  }, true);
+
+  function beginDragCandidate(ev, el, index, folderIdx) {
+    var startX = ev.clientX, startY = ev.clientY;
+    var container = folderIdx < 0 ? grid : $("folderGrid");
+    var started = false, ghost = null, initRect = null;
+    var curIndex = index, dropFolderEl = null, dropFolderIdx = -1;
+
+    function onMove(e) {
+      if (!started) {
+        if (Math.abs(e.clientX - startX) < 5 && Math.abs(e.clientY - startY) < 5) return;
+        start();
       }
-    };
-    el.ondragleave = function () { el.classList.remove("drop-into"); };
-    el.ondrop = function (ev) {
-      ev.preventDefault();
-      el.classList.remove("drop-into");
-      if (!dragFrom) return;
-      if (isDropIntoFolder()) {
-        var movedIn = conf.shortcuts.splice(dragFrom.index, 1)[0];
-        item.items.push(movedIn);          // item 即目标收纳夹，splice 后引用依然有效
+      ghost.style.transform = "translate(" + (e.clientX - startX) + "px," + (e.clientY - startY) + "px)";
+      hover(e.clientX, e.clientY);
+    }
+    function onUp() {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      if (started) finish();
+    }
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+
+    function start() {
+      started = true;
+      justDragged = true;
+      initRect = el.getBoundingClientRect();
+      ghost = el.cloneNode(true);
+      ghost.classList.add("drag-ghost");
+      ghost.style.left = initRect.left + "px";
+      ghost.style.top = initRect.top + "px";
+      ghost.style.width = initRect.width + "px";
+      ghost.style.height = initRect.height + "px";
+      ghost.style.transform = "translate(0,0)";
+      document.body.appendChild(ghost);
+      el.classList.add("drag-placeholder");
+    }
+
+    function clearFolder() {
+      if (dropFolderEl) { dropFolderEl.classList.remove("drop-into"); dropFolderEl = null; dropFolderIdx = -1; }
+    }
+
+    function hover(x, y) {
+      var kids = [].slice.call(container.querySelectorAll(".tile:not(.add)"));
+      var overIdx = -1, overEl = null;
+      for (var k = 0; k < kids.length; k++) {
+        var r = kids[k].getBoundingClientRect();
+        if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) { overIdx = k; overEl = kids[k]; break; }
+      }
+      if (overEl !== dropFolderEl) clearFolder();
+      if (overIdx < 0 || overEl === el) return;
+      var list = tileList(folderIdx);
+      // 顶层：普通磁贴悬停在收纳夹上 → 放入模式（高亮，不排序）
+      if (folderIdx < 0 && isFolder(list[overIdx]) && !isFolder(list[curIndex])) {
+        overEl.classList.add("drop-into");
+        dropFolderEl = overEl; dropFolderIdx = overIdx;
+        return;
+      }
+      if (overIdx === curIndex) return;
+      // 实时排序 + FLIP 让位
+      flip(container, function () {
+        var moved = list.splice(curIndex, 1)[0];
+        list.splice(overIdx, 0, moved);
+        if (overIdx > curIndex) overEl.after(el); else overEl.before(el);
+        curIndex = overIdx;
+      });
+    }
+
+    function finish() {
+      var list = tileList(folderIdx);
+      if (dropFolderEl) {                        // 放入收纳夹
+        dropFolderEl.classList.remove("drop-into");
+        var fIdx = dropFolderIdx > curIndex ? dropFolderIdx - 1 : dropFolderIdx;
+        var moved = list.splice(curIndex, 1)[0];
+        list[fIdx].items.push(moved);
+        ghost.remove();
+        el.classList.remove("drag-placeholder");
         saveShortcuts();
         renderGrid();
         return;
       }
-      if (dragFrom.folderIdx !== folderIdx || dragFrom.index === i) return;
-      var list = folderIdx < 0 ? conf.shortcuts : conf.shortcuts[folderIdx].items;
-      var moved = list.splice(dragFrom.index, 1)[0];
-      list.splice(i, 0, moved);
-      saveShortcuts();
-      folderIdx < 0 ? renderGrid() : renderFolder();
-    };
-    return el;
+      // 排序落位：浮起副本平滑归位到占位处，再收尾重绘
+      var finalRect = el.getBoundingClientRect();
+      ghost.style.transition = "transform .2s var(--ease-out)";
+      ghost.style.transform = "translate(" + (finalRect.left - initRect.left) + "px," + (finalRect.top - initRect.top) + "px)";
+      var g = ghost; ghost = null;
+      setTimeout(function () {
+        g.remove();
+        el.classList.remove("drag-placeholder");
+        saveShortcuts();
+        folderIdx < 0 ? renderGrid() : renderFolder();
+      }, 300);
+    }
   }
-  var dragFrom = null;
-  // 防止拖拽落在磁贴以外时浏览器把页面替换成被拖的文件/链接
-  document.addEventListener("dragover", function (ev) { ev.preventDefault(); });
-  document.addEventListener("drop", function (ev) { ev.preventDefault(); });
 
   function makeAddTile(folderIdx) {
     var el = document.createElement("div");
@@ -1015,7 +1193,6 @@
   // ================= 视图切换（搜索 ↔ 应用，参考青柠交互） =================
   var viewSearch = $("viewSearch");
   var viewApps = $("viewApps");
-  var skipHistoryOnce = false;
 
   function showView(name) {
     var apps = name === "apps";
@@ -1023,7 +1200,7 @@
     viewApps.hidden = !apps;
     viewSearch.hidden = apps;
     if (apps) { closeMenus(); input.blur(); }
-    else { skipHistoryOnce = true; input.focus(); }
+    else input.focus();   // 历史不再挂在 focus 上，聚焦不会弹面板
   }
 
   // "空白处"：页面背景、时钟日期、视图容器本身（不含磁贴/搜索框/弹层等交互元素）

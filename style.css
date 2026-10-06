@@ -5,6 +5,8 @@
   /* 浅色主题（默认） */
   --glass-bg: rgba(255, 255, 255, .28);
   --glass-border: rgba(255, 255, 255, .32);
+  --glass-bg-idle: rgba(255, 255, 255, .10);      /* 未聚焦的搜索框：近乎溶于壁纸 */
+  --glass-border-idle: rgba(255, 255, 255, .13);
   --tile-bg: rgba(255, 255, 255, .30);
   --tile-border: rgba(255, 255, 255, .28);
   --panel-bg: rgba(255, 255, 255, .97);
@@ -17,6 +19,8 @@
 body.dark {
   --glass-bg: rgba(28, 30, 34, .50);
   --glass-border: rgba(255, 255, 255, .14);
+  --glass-bg-idle: rgba(28, 30, 34, .26);
+  --glass-border-idle: rgba(255, 255, 255, .07);
   --tile-bg: rgba(28, 30, 34, .55);
   --tile-border: rgba(255, 255, 255, .12);
   --panel-bg: rgba(38, 40, 45, .97);
@@ -125,16 +129,43 @@ body {
   border-radius: 999px;
   background: var(--glass-bg);
   backdrop-filter: blur(30px) saturate(1.75);
-  border: 1px solid var(--glass-border);
-  /* 分层阴影 + 顶部内高光：接触阴影 / 环境阴影 / 玻璃反光 */
+  /* 未聚焦：溶于壁纸——更透的玻璃、若有若无的边框，阴影几乎消失 */
+  background: var(--glass-bg-idle);
+  border: 1px solid var(--glass-border-idle);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .08);
+  transition: background .3s ease, border-color .3s ease,
+              transform .25s var(--ease-spring), box-shadow .3s ease;
+}
+/* 内容（引擎图标 + 输入区）未聚焦时直接隐身，只留一枚空玻璃胶囊 */
+#engineBtn, #searchForm {
+  opacity: 0;
+  transition: opacity .2s ease;   /* 鼠标移开：立刻淡出 */
+}
+/* 悬停：半唤醒（回到原玻璃质感，内容变得基本可读） */
+.search:hover,
+.search:has(#q:not(:placeholder-shown)) {
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
   box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 8px 32px rgba(0, 0, 0, .18),
               inset 0 1px 0 rgba(255, 255, 255, .22);
-  transition: background .25s ease, transform .25s var(--ease-spring), box-shadow .25s ease;
 }
+/* 悬停需停留 .35s 才开始渐渐浮现——鼠标只是划过时不会闪烁 */
+.search:hover #engineBtn, .search:hover #searchForm {
+  opacity: 1;
+  transition: opacity .45s ease .35s;
+}
+/* 聚焦（或已有输入内容）：完全清晰 */
 .search:focus-within {
   background: var(--panel-bg);
   transform: scale(1.02);
   box-shadow: 0 2px 6px rgba(0, 0, 0, .1), 0 16px 48px rgba(0, 0, 0, .25);
+}
+/* 聚焦 / 已有内容：立即显示，不受悬停延迟影响 */
+.search:focus-within #engineBtn, .search:focus-within #searchForm,
+.search:has(#q:not(:placeholder-shown)) #engineBtn,
+.search:has(#q:not(:placeholder-shown)) #searchForm {
+  opacity: 1;
+  transition: opacity .2s ease;
 }
 
 #engineBtn {
@@ -146,7 +177,8 @@ body {
   background: transparent;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: background .15s ease;
+  /* opacity 过渡必须一并声明：本规则与上方 #engineBtn 隐身规则同优先级且在后，会整体覆盖 transition */
+  transition: background .15s ease, opacity .2s ease;
 }
 #engineBtn { color: #fff; }
 #engineBtn:hover { background: rgba(127, 127, 127, .18); }
@@ -163,6 +195,12 @@ body {
   color: inherit;
 }
 .eng-ico iconify-icon { font-size: 19px; }   /* iconify-icon 尺寸 = 1em */
+/* 品牌色图标：一律用纯品牌色；深色面板或壁纸上，过深的品牌改用配置里的 colorDark */
+.eng-ico.brand { color: var(--brand); }
+body.dark .eng-ico.brand,
+.search:not(:focus-within) #engineBtn .eng-ico.brand {
+  color: var(--brand-dark, var(--brand));
+}
 
 #searchForm { flex: 1; display: flex; height: 100%; }
 
@@ -213,7 +251,6 @@ body {
 .eng-item:hover { background: var(--panel-hover); }
 .eng-item .eng-ico { width: 18px; height: 18px; font-size: 13px; }
 .eng-item .eng-ico iconify-icon { font-size: 17px; }
-.eng-item.on .eng-ico { color: #3b82f6; }   /* 选中项 glyph 高亮 */
 .eng-item .eng-name { flex: 1; text-align: left; }
 /* 行内顺序：图标 → 名称(撑满) → ✓(选中时) → 快捷键提示；提示恒靠右对齐 */
 .eng-item .hint { flex: none; font-size: 11px; font-style: normal; color: var(--panel-muted); order: 2; }
@@ -298,6 +335,9 @@ body {
   text-decoration: none;
   color: #fff;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-drag: none;
+  touch-action: none;
   opacity: 0;
   animation: fadeUp .6s var(--ease-out) both;
   animation-delay: min(calc(.28s + var(--i) * 35ms), .8s);
@@ -308,7 +348,22 @@ body {
 .tile.extra { display: none; }
 #grid.expanded .tile.extra { display: flex; }
 
-.tile.dragging { opacity: .35; }
+/* 拖拽中原位的占位件（被浮起副本遮住） */
+.tile.drag-placeholder { opacity: .2; }
+.tile img, .tile iconify-icon, .tile svg { -webkit-user-drag: none; }
+
+/* 跟随指针的浮起副本，像手机拿起 app */
+.drag-ghost {
+  position: fixed; margin: 0; z-index: 80;
+  pointer-events: none;
+  animation: none !important;
+  opacity: .97;
+  will-change: left, top, transform;
+}
+.drag-ghost .tile-icon {
+  transform: scale(1.06);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, .42), inset 0 1px 0 rgba(255, 255, 255, .25);
+}
 
 /* 拖拽悬停在收纳夹上：高亮提示"松手放入" */
 .tile.drop-into .tile-icon {
@@ -335,6 +390,16 @@ body {
   display: flex; align-items: center; justify-content: center;
   font-size: 24px; font-weight: 600; color: #fff;
 }
+/* 官方品牌标磁贴：品牌色方块（轻微同色系渐变）+ 白色品牌标，与首字方块同一形态 */
+.tile-icon.glyph,
+.tile-icon.folder .mini.glyph {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--brand) 86%, #fff),
+    color-mix(in srgb, var(--brand) 84%, #000));
+  color: #fff;
+}
+.tile-icon.glyph iconify-icon { font-size: 30px; }
+.tile-icon.folder .mini.glyph iconify-icon { font-size: 10px; }
 .tile:hover .tile-icon {
   transform: scale(1.1) translateY(-2px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, .1), 0 12px 28px rgba(0, 0, 0, .24),
@@ -560,6 +625,7 @@ button.primary:hover { filter: brightness(1.08); }
   #grid { grid-template-columns: repeat(auto-fill, minmax(106px, 1fr)); }
   .tile { width: 106px; }
   .tile-icon { width: 66px; height: 66px; border-radius: 20px; }
+  .tile-icon.glyph iconify-icon { font-size: 34px; }
   .tile-name { font-size: 13px; max-width: 106px; }
 }
 
